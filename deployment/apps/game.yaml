@@ -1,0 +1,75 @@
+# Deployment 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game
+  labels:
+    app: game
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: game
+  template:
+    metadata:
+      labels:
+        app: game
+    spec: 
+      containers:
+      - name: game
+        image: 773913840750.dkr.ecr.eu-west-2.amazonaws.com/apps/2048-game:latest
+        ports:
+        - containerPort: 3000
+
+---
+
+# Cluster IP Service
+
+apiVersion: v1
+kind: Service
+metadata: 
+  name: game
+spec:
+  selector:
+    app: game
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 3000
+  - name: app-port
+    protocol: TCP
+    port: 8086
+    targetPort: 3000
+
+---
+
+# Ingress 
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: game-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: "issuer"
+    external-dns.alpha.kubernetes.io/hostname: game.eks.tomakady.com
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec: 
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - game.eks.tomakady.com
+    secretName: game-tls
+  rules:
+  - host: game.eks.tomakady.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend: 
+          service:
+            name: game
+            port: 
+              number: 80

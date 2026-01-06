@@ -1,0 +1,54 @@
+.trunk/
+
+# Environment files
+.env
+*.pem
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+terraform.tfvars
+
+# Terraform plan output
+plan.log
+plan.out
+*.plan
+tfplan
+
+# Temporary files
+*.out
+*.log
+ipconfig
+rrset-*.json
+rrset-*.json.out
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Scripts (if aws-script.sh is generated)
+deployment/scripts/aws-script.sh
+
+# Other
+INSTRUCTIONS.md
+MANUAL.md

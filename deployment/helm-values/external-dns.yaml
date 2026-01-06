@@ -1,0 +1,36 @@
+provider: aws
+
+rbac:
+  create: true
+
+image:
+  repository: registry.k8s.io/external-dns/external-dns
+  tag: v0.19.0  # Update from v0.15.0
+
+aws:
+  region: eu-west-2
+
+sources:
+  - service
+  - ingress
+
+policy: sync
+registry: txt
+txtOwnerId: default
+
+domainFilters:
+  - eks.tomakady.com
+
+interval: 1m  # Faster sync
+logLevel: info
+logFormat: text
+
+extraArgs:
+  - --aws-zone-type=public
+  - --events
+  # Note: --aws-prefer-cname defaults to false (uses A Alias records for NLBs)
+  # Note: --aws-evaluate-target-health defaults to false (no health checks)
+
+serviceAccount:
+  create: true
+  name: external-dns

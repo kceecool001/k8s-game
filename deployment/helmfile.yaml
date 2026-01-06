@@ -1,0 +1,85 @@
+helmDefaults:
+  createNamespace: true
+  wait: true
+  # rollbackOnFailure: true # atomic is deprecated but Helmfile still uses it
+  atomic: true
+  timeout: 300
+
+repositories:
+  - name: nginx-stable
+    url: https://helm.nginx.com/stable
+  - name: cert-manager
+    url: https://charts.jetstack.io
+  - name: external-dns
+    url: https://kubernetes-sigs.github.io/external-dns/
+  - name: argocd
+    url: https://argoproj.github.io/argo-helm
+  - name: prometheus
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+
+releases:
+  - name: nginx-ingress
+    namespace: nginx-ingress
+    chart: nginx-stable/nginx-ingress
+    version: "1.2.0"  # Check latest version
+    values:
+      - helm-values/nginx-ingress.yaml
+    set:
+      - name: controller.ingressClassResource.name
+        value: nginx
+      - name: controller.ingressClassResource.enabled
+        value: "true"
+      - name: controller.service.type
+        value: LoadBalancer
+      - name: controller.admissionWebhooks.enabled
+        value: "false"
+
+  - name: cert-manager
+    namespace: cert-manager
+    chart: cert-manager/cert-manager
+    version: "1.18.2"
+    values:
+      - helm-values/cert-manager.yaml
+    hooks:
+      - events: ["postsync"]
+        showlogs: true
+        command: "kubectl"
+        args:
+          - "apply"
+          - "-f"
+          - "cert-mgr/issuer.yaml"
+
+  - name: external-dns
+    namespace: external-dns
+    chart: external-dns/external-dns
+    version: "1.18.0"  # Match Terraform's version
+    values:
+      - helm-values/external-dns.yaml
+    set:
+      - name: image.repository
+        value: registry.k8s.io/external-dns/external-dns
+      - name: image.tag
+        value: v0.19.0
+
+  - name: argocd
+    namespace: argo-cd
+    chart: argocd/argo-cd
+    version: "9.0.5"
+    values:
+      - helm-values/argocd.yaml
+
+  - name: prometheus
+    namespace: prometheus
+    chart: prometheus/prometheus
+    version: "27.44.1"
+    values:
+      - helm-values/prometheus.yaml
+
+  - name: grafana
+    namespace: grafana
+    chart: grafana/grafana
+    version: "10.1.4"
+    values:
+      - helm-values/grafana.yaml

@@ -1,0 +1,36 @@
+name: Terraform apply
+
+on:
+  workflow_dispatch:
+
+permissions: 
+  id-token: write
+  contents: read  
+
+env:
+  AWS_REGION: eu-west-2
+
+
+jobs:   
+  apply:
+    runs-on: ubuntu-24.04
+
+    steps:
+
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Configure AWS credentials w/ OIDC
+          uses: aws-actions/configure-aws-credentials@v2
+          with:
+            role-to-assume: ${{ secrets.ADMIN_ARN }}
+            aws-region: ${{ env.AWS_REGION }}
+
+        - name: Run checkov scan
+          uses: bridgecrewio/checkov-action@v12
+
+        - name: Terraform apply
+          uses: dflook/terraform-apply@v2
+          with:
+            path: deployment/terraform
+            auto_approve: true

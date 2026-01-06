@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: issuer
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: "tomakady@gmail.com"
+    privateKeySecretRef:
+      name: issuer
+    solvers:
+    - dns01:
+        route53:
+          region: eu-west-2
+          hostedZoneID: "Z0132741EJ46AY0VX6OS"
+      selector:
+        dnsZones:
+        - "eks.tomakady.com"
+    - http01:
+        ingress:
+          class: nginx
+          

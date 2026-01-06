@@ -1,0 +1,83 @@
+# Grafana Helm Chart Values
+# Customize these values based on your requirements
+
+# Admin credentials
+adminUser: admin
+adminPassword: admin  # Change this in production!
+
+# Persistence
+persistence:
+  enabled: false
+  type: pvc
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+
+# Service
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+# Ingress (optional - can be managed by external-dns)
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "issuer"
+    external-dns.alpha.kubernetes.io/hostname: grafana.eks.tomakady.com
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - grafana.eks.tomakady.com
+  tls:
+    - secretName: grafana-tls
+      hosts:
+        - grafana.eks.tomakady.com
+
+# Resources
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# Service account
+serviceAccount:
+  create: true
+
+# Dashboards
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+dashboards:
+  default:
+    kubernetes:
+      gnetId: 7249
+      revision: 1
+      datasource: Prometheus
+
+# Datasources - Auto-configure Prometheus
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.prometheus.svc.cluster.local
+        isDefault: true
+        editable: true
+

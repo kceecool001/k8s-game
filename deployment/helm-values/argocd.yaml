@@ -1,0 +1,21 @@
+global:
+  domain: argocd.eks.tomakady.com
+
+server:
+  extraArgs:
+    - --insecure
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "issuer"
+      external-dns.alpha.kubernetes.io/hostname: argocd.eks.tomakady.com
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - argocd.eks.tomakady.com
+    tls:
+      - secretName: argocd-server-tls
+        hosts:
+          - argocd.eks.tomakady.com

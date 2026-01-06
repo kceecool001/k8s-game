@@ -1,0 +1,50 @@
+name: Push to Amazon ECR
+
+on:
+  workflow_dispatch:
+
+permissions: 
+  id-token: write
+  contents: read    
+
+env:
+  AWS_REGION: eu-west-2                       
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials w/ OIDC
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: ${{ secrets.ECR_ARN }}
+        aws-region: eu-west-2
+    
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and tag image 
+      id: build-image
+      run: |
+        cd src
+        docker build -t 2048-game .
+        docker tag 2048-game:latest ${{ secrets.IMAGE_TAG }}
+        
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@0.28.0
+      with:
+        image-ref: ${{ secrets.IMAGE_TAG }}
+
+    - name: Run Checkov scan
+      uses: bridgecrewio/checkov-action@v12
+
+    - name: Push to Amazon ECR
+      run: |
+        docker push ${{ secrets.IMAGE_TAG }}
+

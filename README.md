@@ -1,309 +1,156 @@
-# EKS Lab - Kubernetes Cluster with ArgoCD
+# Production-grade K8s deployment
 
-This repository contains Terraform configurations and Helmfile specifications for deploying an EKS cluster with ArgoCD, NGINX Ingress, Cert-Manager, and ExternalDNS.
+## Diagram
+
+*[Add architecture diagram here]*
+
+## Overview
+
+This project is a scalable, production-grade deployment of the 2048 game application on an EKS cluster. The deployment is spread across three AZs for high-availability and uses the EKS Managed Node Group service, allowing for streamlined scalability. Infrastructure deployments are automated using Terraform, and the application is containerised using Docker and deployed to a private container registry on AWS (ECR).
 
 ## Architecture
 
-- **Terraform**: Manages AWS infrastructure (VPC, EKS, IAM, Pod Identities)
-- **Helmfile**: Manages Kubernetes applications (Helm charts)
-- **External-DNS**: Automatically manages Route53 DNS records based on ingress annotations
-- **Cert-Manager**: Automatically issues TLS certificates via Let's Encrypt
-- **ArgoCD**: GitOps continuous delivery tool
+*[Add architecture diagram here]*
 
-## Prerequisites
+## Key features
 
-Before deploying, ensure you have:
+- **External-dns**: Automatically updates DNS records in Route 53.
+- **Cert-manager**: Provides DNS validation and digital certificates, as well as certificate management.
+- **Helmfile**: Orchestrates K8s deployments across multiple Helm charts.
+- **Prometheus/Grafana**: Fetches vital cluster logs/metrics and visualises them in readable dashboards.
+- **Open ID Connect (OIDC)**: Use of JSON web tokens over access keys lifts the risks & responsibilities of key management and also enforces just-in-time permissions.
 
-- AWS CLI installed and configured
-- Terraform >= 1.0
-- Helmfile installed
-- kubectl installed
-- helm installed
-- Access to AWS account with appropriate permissions
-- Route53 hosted zone for your subdomain
-
-## Quick Start
-
-### Full Deployment Workflow
-
-Deploy everything in the correct order:
-
-```bash
-cd deployment
-
-# Step 1: Deploy infrastructure and applications
-# This runs terraform apply + helmfile sync automatically
-./scripts/deploy.sh
-
-# Step 2: Connect GitHub repository (required for private repos)
-# This creates a Kubernetes secret with your GitHub PAT
-./scripts/connect-github-repo.sh
-
-# Step 3: Get ArgoCD admin password
-./scripts/get-argocd-password.sh
-
-# Step 4: Deploy ArgoCD Applications
-./scripts/apply-argocd-app.sh
-```
-
-**What gets deployed:**
-
-1. **Infrastructure (Terraform)**:
-   - VPC with public/private subnets
-   - EKS cluster with managed node groups
-   - VPC endpoints for cost optimization
-   - IAM roles and Pod Identity associations for cert-manager and external-dns
-
-2. **Applications (Helmfile)**:
-   - NGINX Ingress Controller
-   - Cert-Manager (with CRDs)
-   - External-DNS
-   - ArgoCD
-   - Prometheus
-   - Grafana
-
-3. **ArgoCD Setup**:
-   - GitHub repository connection (for private repos)
-   - ArgoCD Application resources
-
-**Note**: Route53 DNS records are automatically created by External-DNS when you deploy ingresses via Helmfile.
-
-### Access ArgoCD
-
-After deployment:
-
-- URL: `https://argocd.labs.tomakady.com`
-- Username: `admin`
-- Password: Use `./scripts/get-argocd-password.sh` to retrieve it
-
-## Project Structure
+## Directory Structure
 
 ```
-.
-├── deployment/
-│   ├── terraform/                 # Terraform infrastructure
-│   │   ├── vpc.tf                # VPC and networking
-│   │   ├── eks.tf                # EKS cluster configuration
-│   │   ├── pod-identities.tf     # IAM roles and Pod Identity associations
-│   │   ├── providers.tf         # Terraform providers and backend
-│   │   └── locals.tf             # Local variables and configuration
-│   ├── helmfile.yaml             # Helmfile specification for all Helm releases
-│   ├── helm-values/              # Helm chart values
+├── .github
+│   └── workflows
+│       ├── docker-build.yaml
+│       ├── terraform-apply.yaml
+│       └── terraform-destroy.yaml
+├── deployment
+│   ├── helmfile.yaml
+│   ├── apps
+│   │   └── game.yaml
+│   ├── argo-cd
+│   │   └── apps-argo.yaml
+│   ├── cert-mgr
+│   │   └── issuer.yaml
+│   ├── helm-values
 │   │   ├── argocd.yaml
 │   │   ├── cert-manager.yaml
 │   │   ├── external-dns.yaml
+│   │   ├── grafana.yaml
 │   │   ├── nginx-ingress.yaml
-│   │   ├── prometheus.yaml
-│   │   └── grafana.yaml
-│   ├── argo-cd/                  # ArgoCD Application manifests
-│   │   └── apps-argo.yaml
-│   └── scripts/
-│       └── apply-argocd-app.sh   # Script to apply ArgoCD Applications
+│   │   └── prometheus.yaml
+│   ├── scripts
+│   │   ├── deploy.sh
+│   │   ├── destroy.sh
+│   │   └── ...
+│   └── terraform
+│       ├── eks.tf
+│       ├── vpc.tf
+│       ├── pod-identities.tf
+│       ├── providers.tf
+│       ├── outputs.tf
+│       └── locals.tf
+└── src
+    └── Dockerfile
 ```
 
-## How It Works
+## Docker
 
-### Infrastructure (Terraform)
+*[Add Docker diagram here]*
 
-Terraform manages only AWS infrastructure:
-- **vpc.tf**: VPC, subnets, security groups, VPC endpoints
-- **eks.tf**: EKS cluster, node groups, security group rules
-- **pod-identities.tf**: IAM policies, roles, and Pod Identity associations for cert-manager and external-dns
-- **providers.tf**: Terraform backend, providers, and data sources
-- **locals.tf**: Shared variables and configuration
+- **Multistage builds**: Separates the application build from the final image, cutting image sizes by reducing build dependencies in the final image.
+- **Image tagging**: Uses semantic versioning tags (`latest`) to enable reliable image management and deployment.
+- **Nginx-based serving**: Uses `nginx:alpine` as the base image to efficiently serve static files, configured to listen on port 3000.
+- **Trivy scans**: Scan images for any CVEs before they're pushed to ECR, ensuring security vulnerabilities are caught early in the pipeline.
 
-### Applications (Helmfile)
+## Terraform
 
-Helmfile manages all Kubernetes applications:
-- Deploys Helm charts in the correct order
-- Manages chart versions and values
-- Creates namespaces automatically
-- Handles dependencies between charts
+*[Add Terraform diagram here]*
 
-### DNS Management (External-DNS)
+- **Community modules**: Implementation of DRY principles, using ready-made, reusable Terraform modules (EKS, VPC, Pod Identity).
+- **Checkov**: Security scanning in CI pipelines enforces security best-practices in Terraform configurations, hardening infrastructure.
+- **S3 backend**: Terraform state is stored in an S3 bucket with encryption enabled, enabling state locking and team collaboration.
+- **VPC endpoints**: Private connectivity to AWS services (S3, ECR, STS, CloudWatch Logs) without requiring internet gateways, enhancing security and reducing data transfer costs.
 
-External-DNS automatically:
-- Watches for ingress resources with `external-dns.alpha.kubernetes.io/hostname` annotation
-- Creates/updates Route53 A and AAAA records pointing to the LoadBalancer
-- No manual scripts needed - it's fully automated!
+## GitOps Workflow
 
-### Certificate Management (Cert-Manager)
+*[Add GitOps diagram here]*
 
-Cert-Manager automatically:
-- Issues TLS certificates via Let's Encrypt
-- Uses DNS01 challenge with Route53 (via Pod Identity)
-- Creates TLS secrets for ingresses
-- Renews certificates automatically
+- **CI Pipelines**: Manual workflow triggers (`workflow_dispatch`) provide controlled execution of builds and deployments, preventing unintentional workflow runs. OIDC authentication solves the risks associated with long-lived access keys.
+- **GitHub Secrets**: Sensitive data such as image tags and IAM role ARNs are stored as secrets rather than hardcoded as plaintext.
+- **ArgoCD**: ArgoCD server monitors the repository for any changes to the application manifests in `deployment/apps/` and automatically deploys them, syncing the cluster with the desired state.
 
-## Configuration
+## ArgoCD
 
-### Domain Configuration
+*[Add ArgoCD diagram here]*
 
-Update `deployment/terraform/locals.tf`:
+ArgoCD monitors the `deployment/apps/` directory and automatically syncs any changes to Kubernetes manifests. The application is configured to use the game deployment, service, and ingress resources, ensuring the 2048 game is always in the desired state.
 
-```hcl
-locals {
-  domain = "labs.tomakady.com"  # Change this
-  region = "eu-west-2"
-  # ...
-}
-```
+Access ArgoCD at: `https://argocd.eks.tomakady.com`
 
-### Helm Chart Versions
+## Observability
 
-Update `deployment/helmfile.yaml` to change chart versions:
+### Prometheus
 
-```yaml
-releases:
-  - name: argocd
-    chart: argocd/argo-cd
-    version: "9.0.5"  # Change version here
-```
+*[Add Prometheus diagram here]*
 
-### Cert-Manager Email
+Prometheus: Node exporter sits inside each K8s node and grabs all internal metrics, such as CPU usage, memory and available storage space.
 
-Update `deployment/helm-values/cert-manager.yaml` or create a ClusterIssuer manually.
+Access Prometheus at: `https://prometheus.eks.tomakady.com`
 
-## Common Commands
+### Grafana
+
+*[Add Grafana diagram here]*
+
+Grafana: Grabs the data fetched by Prometheus and makes it more readable through dashboards and visualisations. Prometheus' URL needs to be configured as a data source for Grafana to see it.
+
+Access Grafana at: `https://grafana.eks.tomakady.com`
+
+## Run Locally
+
+Copy the contents of `src/` into your local machine. Then run:
 
 ```bash
-# Get cluster kubeconfig
-aws eks update-kubeconfig --name eks-lab --region eu-west-2
-
-# Check Helm releases
-helm list -A
-
-# Check Helmfile status
-cd deployment
-helmfile list
-
-# Sync specific release
-helmfile sync -l name=argocd
-
-# Check certificate status
-kubectl get certificate -A
-
-# Check ingress status
-kubectl get ingress -A
-
-# Check External-DNS logs
-kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns
-
-# Check Route53 records (should be automatic)
-aws route53 list-resource-record-sets --hosted-zone-id Z0314813274VWO3I28JJY
-
-# Get ArgoCD admin password (recommended)
-cd deployment
-./scripts/get-argocd-password.sh
-
-# Or manually
-kubectl -n argo-cd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-
-# Connect GitHub repository (for private repos)
-cd deployment
-./scripts/connect-github-repo.sh
-
-# Apply ArgoCD Application
-cd deployment
-./scripts/apply-argocd-app.sh
+python -m http.server 3000
 ```
 
-## Deployment Workflow
+Or use Docker:
 
-### First Time Deployment
+```bash
+cd src
+docker build -t 2048-game .
+docker run -p 3000:3000 2048-game
+```
+
+Access the game at: `http://localhost:3000`
+
+## Deployment
+
+See `INSTRUCTIONS.md` for detailed deployment instructions.
+
+Quick start:
 
 ```bash
 cd deployment
-
-# 1. Deploy infrastructure and applications
 ./scripts/deploy.sh
-
-# 2. Connect GitHub repository (if private)
 ./scripts/connect-github-repo.sh
-
-# 3. Get ArgoCD password
 ./scripts/get-argocd-password.sh
-
-# 4. Deploy ArgoCD Applications
 ./scripts/apply-argocd-app.sh
 ```
 
-### Updates
+## What I learnt
 
-```bash
-# Update infrastructure
-cd deployment/terraform
-terraform apply
+- **PVs & PVCs**: Services such as Prometheus node-exporter and alertmanager require persistent storage to store logs, metrics and alerts. When deployed through K8s, this is provided through a persistent volume. To access this, pods need to make a persistent volume claim. Without either, neither service can run, causing the release to fail.
 
-# Update applications
-cd deployment
-helmfile sync
-```
+- **ClusterIssuer management**: Cluster-scoped resources like ClusterIssuers need to be applied separately from namespace-scoped resources. We use Helmfile hooks to apply the ClusterIssuer after cert-manager is deployed, ensuring proper ordering and dependency management.
 
-## Troubleshooting
+- **Pod Identity**: EKS Pod Identity provides a simpler way for pods to assume IAM roles compared to IRSA, allowing services like cert-manager and external-dns to interact with AWS services (Route53) without storing long-lived credentials.
 
-### DNS Not Resolving
+- **Helmfile hooks**: Using `postsync` hooks in Helmfile allows us to execute commands (like applying ClusterIssuer) after a Helm release is successfully deployed, maintaining the dependency order while keeping infrastructure as code.
 
-**Problem**: Domain doesn't resolve after creating ingress
+- **ExternalDNS and Cert-Manager integration**: The combination of ExternalDNS (which creates Route53 records) and Cert-Manager (which uses DNS-01 challenges for certificate validation) requires careful configuration of hosted zone permissions and DNS zone selectors to work together seamlessly.
 
-**Solutions**:
-1. Check External-DNS pod is running: `kubectl get pods -n external-dns`
-2. Check External-DNS logs: `kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns`
-3. Verify ingress has annotation: `kubectl get ingress -A -o yaml | grep external-dns`
-4. Check Route53 records: `aws route53 list-resource-record-sets --hosted-zone-id Z0314813274VWO3I28JJY`
-5. Wait a few minutes - External-DNS syncs every 1 minute by default
-
-### Certificate Not Issued
-
-**Problem**: Certificate stuck in "Pending" or not ready
-
-**Solutions**:
-1. Check ClusterIssuer exists: `kubectl get clusterissuer`
-2. Check cert-manager pods: `kubectl get pods -n cert-manager`
-3. Check certificate request: `kubectl describe certificaterequest -A`
-4. Verify Pod Identity: `kubectl get pods -n cert-manager -o yaml | grep -i identity`
-5. Check cert-manager logs: `kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager`
-
-### Helmfile Sync Fails
-
-**Problem**: Helmfile sync errors or timeouts
-
-**Solutions**:
-1. Check Helmfile syntax: `helmfile lint`
-2. Check Helm repositories: `helm repo list`
-3. Update Helm repositories: `helmfile repos`
-4. Check specific release: `helmfile sync -l name=argocd`
-5. Increase timeout in `helmfile.yaml`: `timeout: 600`
-
-### Pod Identity Issues
-
-**Problem**: Pods can't assume IAM roles
-
-**Solutions**:
-1. Verify Pod Identity addon: `aws eks describe-addon --cluster-name eks-lab --addon-name eks-pod-identity-agent`
-2. Check Pod Identity associations: `kubectl get pods -n cert-manager -o yaml | grep -i identity`
-3. Verify IAM roles exist: `terraform output -json` (in terraform directory)
-4. Check service account annotations: `kubectl get sa -n cert-manager cert-manager -o yaml`
-
-## Cost Optimization
-
-This setup includes VPC endpoints to reduce EKS API call costs:
-- ECR API and DKR (container registry)
-- STS (security token service)
-- CloudWatch Logs
-- S3 (gateway endpoint)
-
-## Security Notes
-
-- Pod Identity is used for IAM access (more secure than IRSA)
-- TLS certificates are automatically managed by Cert-Manager
-- All ingress traffic is forced to HTTPS
-- VPC endpoints keep traffic within AWS network
-
-## Additional Resources
-
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [Cert-Manager Documentation](https://cert-manager.io/docs/)
-- [ExternalDNS Documentation](https://github.com/kubernetes-sigs/external-dns)
-- [Helmfile Documentation](https://helmfile.readthedocs.io/)
-# k8s-project

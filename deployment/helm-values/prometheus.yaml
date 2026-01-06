@@ -1,0 +1,40 @@
+# Prometheus Helm Chart Values
+# Customize these values based on your requirements
+
+server:
+  name: server
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "issuer"
+      external-dns.alpha.kubernetes.io/hostname: prometheus.eks.tomakady.com
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - prometheus.eks.tomakady.com
+    tls:
+      - secretName: prometheus-server-tls
+        hosts:
+          - prometheus.eks.tomakady.com
+  
+  persistentVolume:
+    enabled: false
+    size: 50Gi
+
+# Alertmanager configuration
+alertmanager:
+  enabled: true
+  replicaCount: 1  # Reduce to 1 replica for faster startup
+  persistence:
+    enabled: false  # Changed from persistentVolume to persistence
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 2Gi
+  resources:
+    requests:
+      memory: "128Mi"  # Reduced resource requests for faster scheduling
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
