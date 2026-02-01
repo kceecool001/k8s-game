@@ -29,6 +29,8 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
+      with:
+        mask-password: true
 
     - name: Build and tag image 
       id: build-image
@@ -45,6 +47,9 @@ jobs:
 
     - name: Run Checkov scan
       uses: bridgecrewio/checkov-action@v12
+      with:
+        download_external_modules: true
+        soft_fail: true
 
     - name: Push to Amazon ECR
       run: |

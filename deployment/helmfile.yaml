@@ -45,11 +45,10 @@ releases:
     hooks:
       - events: ["postsync"]
         showlogs: true
-        command: "kubectl"
+        command: "sh"
         args:
-          - "apply"
-          - "-f"
-          - "cert-mgr/issuer.yaml"
+          - "-c"
+          - "kubectl wait --for=condition=Established crd/clusterissuers.cert-manager.io --timeout=120s 2>/dev/null || true && kubectl apply -f cert-mgr/issuer.yaml"
 
   - name: external-dns
     namespace: external-dns

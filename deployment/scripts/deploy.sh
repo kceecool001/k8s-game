@@ -30,6 +30,8 @@ aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" || echo "War
 echo ""
 echo "Step 2: Deploying platform services..."
 HELMFILE_CMD=$(command -v helmfile 2>/dev/null || echo "helmfile")
+$HELMFILE_CMD repos
+helm repo update
 $HELMFILE_CMD sync
 
 echo ""

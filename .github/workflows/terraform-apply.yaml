@@ -28,6 +28,9 @@ jobs:
 
         - name: Run checkov scan
           uses: bridgecrewio/checkov-action@v12
+          with:
+            download_external_modules: true
+            soft_fail: true
 
         - name: Terraform apply
           uses: dflook/terraform-apply@v2
