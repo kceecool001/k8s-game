@@ -1,3 +1,5 @@
+# Build and push app image to ECR. Deployment to EKS is done by ArgoCD when
+# manifests in deployment/apps/ are updated in the repo (see GitOps in README).
 name: Push to Amazon ECR
 
 on:

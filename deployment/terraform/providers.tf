@@ -9,10 +9,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket  = "eks-tfstate-tomakady" # must already exist
-    key     = "eks-2048/terraform.tfstate"
-    region  = "eu-west-2"
-    encrypt = true
+    bucket         = "eks-tfstate-tomakady" # created by bootstrap/ at repo root (separate from this stack)
+    key            = "eks-2048/terraform.tfstate"
+    region         = "eu-west-2"
+    encrypt        = true
+    dynamodb_table = "eks-tfstate-tomakady-lock"
   }
 }
 

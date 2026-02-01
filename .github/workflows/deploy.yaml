@@ -1,0 +1,93 @@
+# Full deploy: Terraform, Helmfile, ArgoCD app.
+# Requires: bootstrap run once (S3 + DynamoDB). Repo is public (no PAT).
+# ArgoCD admin password: use get-argocd-password.sh locally after deploy.
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-west-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: .
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.ADMIN_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+
+      - name: Terraform apply
+        uses: dflook/terraform-apply@v2
+        with:
+          path: deployment/terraform
+          auto_approve: true
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.0"
+          terraform_wrapper: false
+
+      - name: Get Terraform outputs
+        id: tf
+        run: |
+          cd deployment/terraform
+          terraform init -input=false
+          echo "cluster_name=$(terraform output -raw cluster_name)" >> $GITHUB_OUTPUT
+          echo "region=$(terraform output -raw region)" >> $GITHUB_OUTPUT
+
+      - name: Configure kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ steps.tf.outputs.cluster_name }} \
+            --region ${{ steps.tf.outputs.region }}
+
+      - name: Install kubectl
+        run: |
+          curl -fsSL https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl -o kubectl
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Install Helmfile and Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          HELMFILE_VERSION="0.162.0"
+          curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_linux_amd64.tar.gz" | tar xz
+          sudo mv helmfile /usr/local/bin/
+          helm version
+          helmfile version
+
+      - name: Helmfile sync
+        run: helmfile sync
+        working-directory: deployment
+
+      - name: Wait for ArgoCD server
+        run: |
+          kubectl wait --for=condition=available deployment/argocd-server -n argo-cd --timeout=300s
+
+      - name: Apply ArgoCD Application
+        run: kubectl apply -f deployment/argo-cd/apps-argo.yaml
+
+      - name: Verify deployment
+        run: |
+          kubectl cluster-info
+          kubectl get pods -n argo-cd
+          kubectl get applications -n argo-cd
+          kubectl get certificate -n argo-cd argocd-server-tls -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' && echo " Certificate ready" || true
