@@ -28,7 +28,12 @@ output "eks_zone_name_servers" {
 }
 
 output "github_actions_role_arn" {
-  description = "IAM role ARN for GitHub Actions"
+  description = "IAM role ARN for GitHub Actions (Deploy workflow; set as ADMIN_ARN)"
   value       = aws_iam_role.github_actions.arn
+}
+
+output "github_actions_ecr_role_arn" {
+  description = "IAM role ARN for GitHub Actions Push to ECR workflow; set as ECR_ARN"
+  value       = aws_iam_role.github_actions_ecr.arn
 }
 
