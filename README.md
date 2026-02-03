@@ -2,7 +2,12 @@
 
 ## Diagram
 
-![Architecture](images/architecture.png)
+<div align="center">
+  <p><strong>Light mode</strong></p>
+  <img src="./images/eks-game-light.drawio.png" alt="Architecture (light)" width="600"/>
+  <p><strong>Dark mode</strong></p>
+  <img src="./images/eks-game-dark.drawio.png" alt="Architecture (dark)" width="600"/>
+</div>
 
 ## Overview
 
@@ -10,7 +15,12 @@ This project is a scalable, production-grade deployment of the 2048 game applica
 
 ## Architecture
 
-![Architecture](images/architecture.png)
+<div align="center">
+  <p><strong>Light mode</strong></p>
+  <img src="./images/eks-game-light.drawio.png" alt="Architecture (light)" width="600"/>
+  <p><strong>Dark mode</strong></p>
+  <img src="./images/eks-game-dark.drawio.png" alt="Architecture (dark)" width="600"/>
+</div>
 
 ## Key features
 
