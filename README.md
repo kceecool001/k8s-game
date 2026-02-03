@@ -2,7 +2,7 @@
 
 ## Diagram
 
-*[Add architecture diagram here]*
+![Architecture](images/architecture.png)
 
 ## Overview
 
@@ -10,7 +10,7 @@ This project is a scalable, production-grade deployment of the 2048 game applica
 
 ## Architecture
 
-*[Add architecture diagram here]*
+![Architecture](images/architecture.png)
 
 ## Key features
 
@@ -191,7 +191,7 @@ Checkov Security Scanning
 
 ## Docker
 
-*[Add Docker diagram here]*
+![Docker / ECR](images/docker-ecr.png)
 
 - **Multistage builds**: Separates the application build from the final image, cutting image sizes by reducing build dependencies in the final image.
 - **Image tagging**: Uses semantic versioning tags (`latest`) to enable reliable image management and deployment.
@@ -200,7 +200,7 @@ Checkov Security Scanning
 
 ## Terraform
 
-*[Add Terraform diagram here]*
+![Terraform state](images/terraform-state.png)
 
 - **Community modules**: Implementation of DRY principles, using ready-made, reusable Terraform modules (EKS, VPC, Pod Identity).
 - **Checkov**: Security scanning in CI pipelines enforces security best-practices in Terraform configurations, hardening infrastructure.
@@ -209,7 +209,7 @@ Checkov Security Scanning
 
 ## GitOps Workflow
 
-*[Add GitOps diagram here]*
+![GitOps / ArgoCD](images/gitops-argocd-tree.png)
 
 - **CI Pipelines**: Manual workflow triggers (`workflow_dispatch`) provide controlled execution of builds and deployments, preventing unintentional workflow runs. OIDC authentication solves the risks associated with long-lived access keys.
 - **GitHub Secrets**: Sensitive data such as image tags and IAM role ARNs are stored as secrets rather than hardcoded as plaintext.
@@ -218,7 +218,7 @@ Checkov Security Scanning
 
 ## ArgoCD
 
-*[Add ArgoCD diagram here]*
+![ArgoCD](images/argocd-apps.png)
 
 ArgoCD monitors the `deployment/apps/` directory and automatically syncs any changes to Kubernetes manifests. The application is configured to use the game deployment, service, and ingress resources, ensuring the 2048 game is always in the desired state. Deployment to EKS is triggered automatically when changes are pushed to the repo.
 
@@ -228,7 +228,7 @@ Access ArgoCD at: `https://argocd.eks.tomakady.com`
 
 ### Prometheus
 
-*[Add Prometheus diagram here]*
+![Prometheus](images/prometheus-targets.png)
 
 Prometheus: Node exporter sits inside each K8s node and grabs all internal metrics, such as CPU usage, memory and available storage space.
 
@@ -236,7 +236,7 @@ Access Prometheus at: `https://prometheus.eks.tomakady.com`
 
 ### Grafana
 
-*[Add Grafana diagram here]*
+![Grafana](images/grafana.png)
 
 Grafana: Grabs the data fetched by Prometheus and makes it more readable through dashboards and visualisations. Prometheus' URL needs to be configured as a data source for Grafana to see it.
 
