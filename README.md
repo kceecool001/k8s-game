@@ -1,4 +1,4 @@
-# Production-grade K8s deployment
+# K8s Deployment on AWS
 
 ## Diagram
 
