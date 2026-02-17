@@ -1,11 +1,19 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 21.0"
+  version = "~> 20.0"
 
-  name               = local.cluster
-  kubernetes_version = "1.34"
+  cluster_name    = local.cluster
+  cluster_version = "1.32"
 
-  addons = {
+  # KMS managed externally
+  create_kms_key = false
+  cluster_encryption_config = {
+    provider_key_arn = aws_kms_key.eks.arn
+    resources        = ["secrets"]
+  }
+
+  # Updated: addons → cluster_addons
+  cluster_addons = {
     coredns = {
       before_compute = true
     }
@@ -21,52 +29,39 @@ module "eks" {
     }
   }
 
-  # Optional
-  endpoint_public_access = true
+  # Updated endpoint settings
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_public_access_cidrs = ["46.232.159.83/32"]
+  cluster_endpoint_private_access      = true
 
-  # Optional: Adds the current caller identity as an administrator via cluster access entry
   enable_cluster_creator_admin_permissions = true
-
-  enable_irsa = true
 
   vpc_id                   = module.vpc.vpc_id
   subnet_ids               = module.vpc.private_subnets
-  control_plane_subnet_ids = module.vpc.public_subnets
+  control_plane_subnet_ids = module.vpc.private_subnets
 
-  # EKS Managed Node Group(s)
+  # Node groups (unchanged)
   eks_managed_node_groups = {
     default = {
-      # Starting on 1.30, AL2023 is the default AMI type for EKS managed node groups
       ami_type       = "AL2023_x86_64_STANDARD"
       instance_types = ["t3.medium"]
 
       min_size     = 1
       max_size     = 3
       desired_size = 2
+
+      disk_size = 50
+
+      update_config = {
+        max_unavailable_percentage = 33
+      }
     }
   }
 
+  depends_on = [
+    aws_kms_key.eks,
+    aws_kms_alias.eks
+  ]
+
   tags = local.tags
-}
-
-# Additional security group rules for inter-node HTTP traffic
-# This allows the ingress controller to reach backend services on standard HTTP ports
-resource "aws_security_group_rule" "node_http_ingress" {
-  type                     = "ingress"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  source_security_group_id = module.eks.node_security_group_id
-  security_group_id        = module.eks.node_security_group_id
-  description              = "Allow HTTP traffic between nodes (for ingress controller to reach backend services)"
-}
-
-resource "aws_security_group_rule" "node_http8080_ingress" {
-  type                     = "ingress"
-  from_port                = 8080
-  to_port                  = 8080
-  protocol                 = "tcp"
-  source_security_group_id = module.eks.node_security_group_id
-  security_group_id        = module.eks.node_security_group_id
-  description              = "Allow HTTP traffic on port 8080 between nodes"
 }
