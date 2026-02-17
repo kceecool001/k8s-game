@@ -4,8 +4,8 @@ locals {
   #domain  = "eks.tomakady.com"
   region      = "eu-central-1"
   cluster     = "eks-2048"
-  github_org  = "https://github.com/kceecool001/"
-  github_repo = "https://github.com/kceecool001/k8s-game.git"
+  github_org  = "kceecool001"
+  github_repo = "k8s-game"
 
   tags = {
     Environment = "prod"
