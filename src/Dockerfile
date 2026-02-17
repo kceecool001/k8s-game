@@ -19,8 +19,8 @@ RUN echo 'server { \
 }' > /etc/nginx/conf.d/default.conf
 
 # Set permissions and switch to non-root user
-RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /var/run
-USER nginx
+#RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /var/run
+#USER nginx
 
 EXPOSE 3000
 
